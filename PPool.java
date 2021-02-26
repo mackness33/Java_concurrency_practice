@@ -8,7 +8,7 @@ import java.awt.event.*;
 
 import javax.swing.event.*;
 
-public class PPool extends JPanel implements ActionListener {	
+public class PPool extends JPanel implements ActionListener {
     private int K,I,KI,CAP;
     private	DefaultListModel<State> states;
     private JList<State> text;
@@ -25,7 +25,7 @@ public class PPool extends JPanel implements ActionListener {
 
     private void simulate(String s)  {
         final int TYPE=Integer.parseInt(s.substring(4)); sr.inic(TYPE);
-        
+
         Swimmer[] sw= new Swimmer[K+I];
 
         luz.red();
@@ -37,17 +37,20 @@ public class PPool extends JPanel implements ActionListener {
             p=(Pool)c.newInstance();
             p.setLog(log);
             p.init(KI,CAP);
+            System.out.println("Pool class: " + p.getClass());
+            System.out.println("c: " + c);
+            System.out.println("Pool string: " + p.toString());
             box.state0(K,I);
             System.out.print("Simulation of pool "+TYPE+" ... ");
         }
         catch (Exception e) { e.printStackTrace();}
-        for (int i=0; i<K+I; i++) sw[i]= i<K? new Kid(i,p): new Instructor(i,p);
+        for (int i=0; i<K+I; i++) sw[i] = (i < K) ? new Kid(i,p) : new Instructor(i,p);
 
         try {
             for (int i=0; i<K+I; i++) sw[i].start();
-            // wait for the instructors to finish - it is possible to have unfinished kids 
+            // wait for the instructors to finish - it is possible to have unfinished kids
             for (int i=K; i<K+I; i++) sw[i].join();
-        } 
+        }
         catch (InterruptedException e) {}
 
         // Interrupt all the kids and wait for them to finish
@@ -107,7 +110,7 @@ public class PPool extends JPanel implements ActionListener {
         etiq.add(new JLabel("Pool capacity = "+CAP+" Swimmers", JLabel.CENTER));
         etiq.add(working);
         box = new Box(K+I);
-        states=new DefaultListModel<State>(); 
+        states=new DefaultListModel<State>();
         text = new JList<State>(states);
         sr= new StateRenderer();
         text.setCellRenderer(sr);
@@ -120,7 +123,7 @@ public class PPool extends JPanel implements ActionListener {
         });
         JPanel p=new JPanel(), q=new JPanel();
 
-        luz = new Light(); 
+        luz = new Light();
         luz.green();
 
         enableTypeRadioButtons(true);
@@ -138,7 +141,7 @@ public class PPool extends JPanel implements ActionListener {
         enableTypeRadioButtons(false);
         states.clear();
         final String action = e.getActionCommand();
-        new Thread()  { 
+        new Thread()  {
             public void run() { simulate(action);}
         }.start();
     }
@@ -150,7 +153,7 @@ public class PPool extends JPanel implements ActionListener {
         // 2nd arg  = number of instructors     (interval [2..5],   default 3)
         final int nkids=integer(args,0,7,5,20);
         final int ninst=integer(args,1,3,2,5);
-        
+
         SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 JFrame frame = new JFrame("CSD: Shared Pool");
