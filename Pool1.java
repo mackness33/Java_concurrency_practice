@@ -31,7 +31,10 @@ public class Pool1 extends Pool {   //no kids alone
     public synchronized void kidRests() {
       System.out.println("kid want to rest");
       kidsInPool--;
-      notifyAll();
+
+      if (kidsInPool <= 0)
+        notify();   // let the last instructor rest if he was waiting
+
       log.resting();
     }
 
@@ -39,7 +42,10 @@ public class Pool1 extends Pool {   //no kids alone
     public synchronized void instructorSwims() {
       System.out.println("instructor want to swim");
       instructorsInPool++;
-      notifyAll();
+
+      if (kidsInPool <= 0)
+        notifyAll();        // let all the kids waiting to start swimming
+
       log.swimming();
     }
 
