@@ -1,8 +1,8 @@
 // CSD feb 2015 Juansa Sendra
 
 public class Pool1 extends Pool {   //no kids alone
-    protected int kidsInPool;
-    protected int instructorsInPool;
+    private int kidsInPool;
+    private int instructorsInPool;
 
     @Override
     public void init(int ki, int cap) {
@@ -12,18 +12,17 @@ public class Pool1 extends Pool {   //no kids alone
 
     @Override
     public synchronized void kidSwims() throws InterruptedException {
+      // if there's no instructor in the pool then wait
       while ( instructorsInPool <= 0 ){
         log.waitingToSwim();
         wait();
       }
-
 
       if (instructorsInPool <= 0)
         this.checks("instructors not in the pool");
 
       // update state
       kidsInPool++;
-      // awake threads if needed
 
       log.swimming();
     }
@@ -32,7 +31,7 @@ public class Pool1 extends Pool {   //no kids alone
     public synchronized void kidRests() {
       kidsInPool--;
 
-      notify();   // let the last instructor rest if he was waiting
+      notify();   // notify the last instructor waiting to rest
 
       log.resting();
     }
@@ -41,13 +40,14 @@ public class Pool1 extends Pool {   //no kids alone
     public synchronized void instructorSwims() {
       instructorsInPool++;
 
-      notifyAll();        // let all the kids waiting to start swimming
+      notifyAll();        // notify all the kids waiting to swim
 
       log.swimming();
     }
 
     @Override
     public synchronized void instructorRests() throws InterruptedException {
+      // if there's still kids in the pool and there's only one instructor than wait
       while ( kidsInPool > 0 && instructorsInPool <= 1 ){
         log.waitingToRest();
         wait();
@@ -59,12 +59,10 @@ public class Pool1 extends Pool {   //no kids alone
       // update state
       instructorsInPool--;
 
-      // awake threads if needed
-
       log.resting();
     }
 
-    public synchronized void checks(String err) throws InterruptedException {
+    private synchronized void checks(String err) throws InterruptedException {
         System.out.println("kids presents: " + kidsInPool);
         System.out.println("instructors presents: " + instructorsInPool);
 
