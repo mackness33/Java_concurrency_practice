@@ -4,28 +4,30 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
   protected int kidsInPool;
   protected int instructorsInPool;
   protected int max_cap;
-  protected int cur_cap;
+  protected int instructorsWaitingToRest;
   protected float max_ki;
-  protected int cur_ki;
+  protected int cur_cap;
 
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
     instructorsInPool = 0;
-    cur_ki = 0;
-    max_ki = (float) ki;
     cur_cap = 0;
+    max_ki = (float) ki;
+    instructorsWaitingToRest = 0;
     max_cap = cap;
   }
 
   @Override
   public synchronized void kidSwims() throws InterruptedException {
 
-    while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool) || cur_cap >= max_cap){
+    while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool) || cur_cap >= max_cap || instructorsWaitingToRest > 0){
       log.waitingToSwim();
       wait();
     }
 
+    if (instructorsWaitingToRest > 0)
+      this.checks("instructor in waiting to rest");
 
     if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
       this.checks("too many kids pool");
@@ -47,7 +49,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     kidsInPool--;
     cur_cap--;
 
-    notify();   // let the last instructor rest if he was waiting
+    notifyAll();   // notify instructors waiting to rest and kids waiting to swim
 
     log.resting();
   }
@@ -65,13 +67,14 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     instructorsInPool++;
     cur_cap++;
 
-    notifyAll();        // let all the kids waiting to start swimmingAll
+    notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
   }
 
   @Override
   public synchronized void instructorRests() throws InterruptedException {
+    instructorsWaitingToRest++;
     while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
       log.waitingToRest();
       wait();
@@ -90,8 +93,10 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     // update state
     instructorsInPool--;
     cur_cap--;
+    instructorsWaitingToRest--;
 
     // awake threads if needed
+    notifyAll();        // notify all the swimmers waiting to swim
 
     log.resting();
   }
