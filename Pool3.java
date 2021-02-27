@@ -6,6 +6,7 @@ public class Pool3 extends Pool {   //max capacity
   private int max_cap;
   protected float max_ki;
 
+
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
@@ -13,6 +14,11 @@ public class Pool3 extends Pool {   //max capacity
     max_cap = cap;
     max_ki = (float) ki;
   }
+
+
+  private synchronized int getCurrentCapacity() throws InterruptedException { return kidsInPool + instructorsInPool; }
+  private synchronized float getCurrentKI(int kids, int insts) throws InterruptedException { return (insts == 0) ? 0 : (float)kids/insts; }
+
 
   @Override
   public synchronized void kidSwims() throws InterruptedException {
@@ -42,14 +48,18 @@ public class Pool3 extends Pool {   //max capacity
     log.swimming();
   }
 
+
   @Override
   public synchronized void kidRests() throws InterruptedException  {
+    // update state
     kidsInPool--;
 
+    // awake thread
     notify();   // notify the last instructor waiting to rest
 
     log.resting();
   }
+
 
   @Override
   public synchronized void instructorSwims()  throws InterruptedException  {
@@ -63,12 +73,15 @@ public class Pool3 extends Pool {   //max capacity
     if ( this.getCurrentCapacity() >= max_cap )
       this.checks("Capacity pool exceeded");
 
+    // update state
     instructorsInPool++;
 
+    // awake threads
     notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
   }
+
 
   @Override
   public synchronized void instructorRests() throws InterruptedException {
@@ -96,8 +109,6 @@ public class Pool3 extends Pool {   //max capacity
     log.resting();
   }
 
-  private synchronized int getCurrentCapacity() throws InterruptedException { return kidsInPool + instructorsInPool; }
-  private synchronized float getCurrentKI(int kids, int insts) throws InterruptedException { return (insts == 0) ? 0 : (float)kids/insts; }
 
   // information about the error occured
   private synchronized void checks(String err) throws InterruptedException {
