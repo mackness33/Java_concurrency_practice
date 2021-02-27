@@ -1,43 +1,43 @@
 // CSD feb 2015 Juansa Sendra
 
 public class Pool3 extends Pool {   //max capacity
-  protected int kidsInPool;
-  protected int instructorsInPool;
-  protected int max_cap;
-  protected int cur_cap;
+  private int kidsInPool;
+  private int instructorsInPool;
+  private int max_cap;
   protected float max_ki;
-  protected int cur_ki;
 
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
     instructorsInPool = 0;
-    cur_ki = 0;
-    max_ki = (float) ki;
-    cur_cap = 0;
     max_cap = cap;
+    max_ki = (float) ki;
   }
 
   @Override
   public synchronized void kidSwims() throws InterruptedException {
-
-    while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool) || cur_cap >= max_cap){
+    // if there's no instructor in the pool OR
+    //    there are too many kids in the pool OR
+    //    there are too many swimmers in the pool
+    // then wait
+    while (
+      instructorsInPool <= 0 ||
+      max_ki < this.getCurrentKI(kidsInPool+1, instructorsInPool) ||
+      this.getCurrentCapacity() >= max_cap
+    ){
       log.waitingToSwim();
       wait();
     }
 
-
-    if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
+    // checks
+    if ( this.getCurrentKI(kidsInPool+1, instructorsInPool) > max_ki)
       this.checks("too many kids pool");
 
-    if (cur_cap >= max_cap)
+    if ( this.getCurrentCapacity() >= max_cap)
       this.checks("too many swimmers");
 
     // update state
     kidsInPool++;
-    cur_cap++;
-
-    // awake threads if needed
 
     log.swimming();
   }
@@ -45,34 +45,37 @@ public class Pool3 extends Pool {   //max capacity
   @Override
   public synchronized void kidRests() throws InterruptedException  {
     kidsInPool--;
-    cur_cap--;
 
-    notify();   // let the last instructor rest if he was waiting
+    notify();   // notify the last instructor waiting to rest
 
     log.resting();
   }
 
   @Override
   public synchronized void instructorSwims()  throws InterruptedException  {
-    while ( cur_cap >= max_cap ){
+    // if there'are too many swimmers in the pool then wait
+    while ( this.getCurrentCapacity() >= max_cap ){
       log.waitingToSwim();
       wait();
     }
 
-    if ( cur_cap >= max_cap )
+    // checks
+    if ( this.getCurrentCapacity() >= max_cap )
       this.checks("Capacity pool exceeded");
 
     instructorsInPool++;
-    cur_cap++;
 
-    notifyAll();        // let all the kids waiting to start swimmingAll
+    notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
   }
 
   @Override
   public synchronized void instructorRests() throws InterruptedException {
-    while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
+    // if there's still kids in the pool AND there's only one instructor OR
+    //    there's too many kids in the pool
+    // then wait
+    while ( (kidsInPool > 0 && instructorsInPool <= 1) || max_ki < this.getCurrentKI(kidsInPool, instructorsInPool-1) ){
       log.waitingToRest();
       wait();
     }
@@ -81,7 +84,7 @@ public class Pool3 extends Pool {   //max capacity
     if (instructorsInPool == 0)
       this.checks("instructor already resting");
 
-    if (((instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)) > max_ki)
+    if (this.getCurrentKI(kidsInPool, instructorsInPool-1) > max_ki)
       this.checks("too many kids");
 
     if (kidsInPool > 0 && instructorsInPool <= 1)
@@ -89,17 +92,19 @@ public class Pool3 extends Pool {   //max capacity
 
     // update state
     instructorsInPool--;
-    cur_cap--;
-
-    // awake threads if needed
 
     log.resting();
   }
 
-  public synchronized void checks(String err) throws InterruptedException {
+  private synchronized int getCurrentCapacity() throws InterruptedException { return kidsInPool + instructorsInPool; }
+  private synchronized float getCurrentKI(int kids, int insts) throws InterruptedException { return (insts == 0) ? 0 : (float)kids/insts; }
+
+  // information about the error occured
+  private synchronized void checks(String err) throws InterruptedException {
       System.out.println("kids presents: " + kidsInPool);
       System.out.println("instructors presents: " + instructorsInPool);
-      System.out.println("ki: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
+      System.out.println("ki: " + this.getCurrentKI(kidsInPool, instructorsInPool));
+      System.out.println("cap: " + this.getCurrentCapacity());
 
       System.out.println("\n\n WARNING:" + err + "\n\n");
   }
