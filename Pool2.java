@@ -1,39 +1,32 @@
 // CSD feb 2015 Juansa Sendra
 
 public class Pool2 extends Pool{ //max kids/instructor
-  protected int kidsInPool;
-  protected int instructorsInPool;
-  protected int max_cap;
-  protected int cur_cap;
-  protected float max_ki;
-  protected int cur_ki;
+  private int kidsInPool;
+  private int instructorsInPool;
+  private float max_ki;
 
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
     instructorsInPool = 0;
-    cur_ki = 0;
     max_ki = (float) ki;
-    cur_cap = 0;
-    max_cap = cap;
   }
 
   @Override
   public synchronized void kidSwims() throws InterruptedException {
-
+    // if there's no instructor in the pool OR
+    //    there's too many kids in the pool
+    // then wait
     while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool)){
       log.waitingToSwim();
       wait();
     }
-
 
     if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
       this.checks("too many kids pool");
 
     // update state
     kidsInPool++;
-
-    // awake threads if needed
 
     log.swimming();
   }
@@ -42,7 +35,7 @@ public class Pool2 extends Pool{ //max kids/instructor
   public synchronized void kidRests() {
     kidsInPool--;
 
-    notify();   // let the last instructor rest if he was waiting
+    notify();   // notify the last instructor waiting to rest
 
     log.resting();
   }
@@ -51,13 +44,16 @@ public class Pool2 extends Pool{ //max kids/instructor
   public synchronized void instructorSwims() {
     instructorsInPool++;
 
-    notifyAll();        // let all the kids waiting to start swimmingAll
+    notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
   }
 
   @Override
   public synchronized void instructorRests() throws InterruptedException {
+    // if there's still kids in the pool AND there's only one instructor OR
+    //    there's too many kids in the pool
+    // then wait
     while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
       log.waitingToRest();
       wait();
@@ -76,12 +72,11 @@ public class Pool2 extends Pool{ //max kids/instructor
     // update state
     instructorsInPool--;
 
-    // awake threads if needed
-
     log.resting();
   }
 
-  public synchronized void checks(String err) throws InterruptedException {
+  // information about the error occured
+  private synchronized void checks(String err) throws InterruptedException {
       System.out.println("kids presents: " + kidsInPool);
       System.out.println("instructors presents: " + instructorsInPool);
       System.out.println("ki: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
