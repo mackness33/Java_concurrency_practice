@@ -7,6 +7,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
   private float max_ki;
   private int instructorsWaitingToRest;
 
+
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
@@ -41,7 +42,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     // checks
     if (instructorsWaitingToRest > 0)
       this.checks("instructor in waiting to rest");
-      
+
     if ( this.getCurrentKI(kidsInPool+1, instructorsInPool) > max_ki)
       this.checks("too many kids pool");
 
@@ -60,7 +61,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     // update state
     kidsInPool--;
 
-    // awake threads if needed
+    // awake threads
     notifyAll();   // notify instructors waiting to rest and kids waiting to swim
 
     log.resting();
@@ -82,7 +83,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     // update state
     instructorsInPool++;
 
-    // awake threads if needed
+    // awake threads
     notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
@@ -116,7 +117,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     instructorsInPool--;
     instructorsWaitingToRest--;
 
-    // awake threads if needed
+    // awake threads
     notifyAll();        // notify all the swimmers waiting to swim
 
     log.resting();
