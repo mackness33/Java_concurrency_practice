@@ -1,81 +1,103 @@
 // CSD feb 2013 Juansa Sendra
 
 public class Pool4 extends Pool { //kids cannot enter if there are instructors waiting to exit
-  protected int kidsInPool;
-  protected int instructorsInPool;
-  protected int max_cap;
-  protected int instructorsWaitingToRest;
-  protected float max_ki;
-  protected int cur_cap;
+  private int kidsInPool;
+  private int instructorsInPool;
+  private int max_cap;
+  private float max_ki;
+  private int instructorsWaitingToRest;
 
   @Override
   public void init(int ki, int cap) {
     kidsInPool = 0;
     instructorsInPool = 0;
-    cur_cap = 0;
     max_ki = (float) ki;
-    instructorsWaitingToRest = 0;
     max_cap = cap;
+    instructorsWaitingToRest = 0;
   }
+
+
+  private synchronized int getCurrentCapacity() throws InterruptedException { return kidsInPool + instructorsInPool; }
+  private synchronized float getCurrentKI(int kids, int insts) throws InterruptedException { return (insts == 0) ? 0 : (float)kids/insts; }
+
 
   @Override
   public synchronized void kidSwims() throws InterruptedException {
-
-    while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool) || cur_cap >= max_cap || instructorsWaitingToRest > 0){
+    // if there's no instructor in the pool OR
+    //    there are too many kids in the pool OR
+    //    there are too many swimmers in the pool OR
+    //    there are instructor waiting to rest
+    // then wait
+    while (
+      instructorsInPool <= 0 ||
+      max_ki < this.getCurrentKI(kidsInPool+1, instructorsInPool) ||
+      this.getCurrentCapacity() >= max_cap ||
+      instructorsWaitingToRest > 0
+    ){
       log.waitingToSwim();
       wait();
     }
 
+    // checks
     if (instructorsWaitingToRest > 0)
       this.checks("instructor in waiting to rest");
-
-    if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
+      
+    if ( this.getCurrentKI(kidsInPool+1, instructorsInPool) > max_ki)
       this.checks("too many kids pool");
 
-    if (cur_cap >= max_cap)
+    if ( this.getCurrentCapacity() >= max_cap)
       this.checks("too many swimmers");
 
     // update state
     kidsInPool++;
-    cur_cap++;
-
-    // awake threads if needed
 
     log.swimming();
   }
 
+
   @Override
   public synchronized void kidRests() throws InterruptedException  {
+    // update state
     kidsInPool--;
-    cur_cap--;
 
+    // awake threads if needed
     notifyAll();   // notify instructors waiting to rest and kids waiting to swim
 
     log.resting();
   }
 
+
   @Override
   public synchronized void instructorSwims()  throws InterruptedException  {
-    while ( cur_cap >= max_cap ){
+    // if there's too many kids in the pool then wait
+    while ( this.getCurrentCapacity() >= max_cap ){
       log.waitingToSwim();
       wait();
     }
 
-    if ( cur_cap >= max_cap )
+    // checks
+    if ( this.getCurrentCapacity() >= max_cap )
       this.checks("Capacity pool exceeded");
 
+    // update state
     instructorsInPool++;
-    cur_cap++;
 
+    // awake threads if needed
     notifyAll();        // notify all the kids waiting to swim
 
     log.swimming();
   }
 
+
   @Override
   public synchronized void instructorRests() throws InterruptedException {
+    // update state
     instructorsWaitingToRest++;
-    while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
+
+    // if there's still kids in the pool AND there's only one instructor OR
+    //    there's too many kids in the pool
+    // then wait
+    while ( (kidsInPool > 0 && instructorsInPool <= 1) || max_ki < this.getCurrentKI(kidsInPool, instructorsInPool-1) ){
       log.waitingToRest();
       wait();
     }
@@ -84,7 +106,7 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     if (instructorsInPool == 0)
       this.checks("instructor already resting");
 
-    if (((instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)) > max_ki)
+    if (this.getCurrentKI(kidsInPool, instructorsInPool-1) > max_ki)
       this.checks("too many kids");
 
     if (kidsInPool > 0 && instructorsInPool <= 1)
@@ -92,7 +114,6 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
 
     // update state
     instructorsInPool--;
-    cur_cap--;
     instructorsWaitingToRest--;
 
     // awake threads if needed
@@ -101,10 +122,14 @@ public class Pool4 extends Pool { //kids cannot enter if there are instructors w
     log.resting();
   }
 
-  public synchronized void checks(String err) throws InterruptedException {
+
+  // information about the error occured
+  private synchronized void checks(String err) throws InterruptedException {
       System.out.println("kids presents: " + kidsInPool);
       System.out.println("instructors presents: " + instructorsInPool);
-      System.out.println("ki: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
+      System.out.println("ki: " + this.getCurrentKI(kidsInPool, instructorsInPool));
+      System.out.println("cap: " + this.getCurrentCapacity());
+      System.out.println("instructors waiting to rest: " + instructorsWaitingToRest);
 
       System.out.println("\n\n WARNING:" + err + "\n\n");
   }
