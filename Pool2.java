@@ -34,21 +34,18 @@ public class Pool2 extends Pool{ //max kids/instructor
 
     // update state
     // update state
-    if (((float) (kidsInPool+1)/instructorsInPool) <= max_ki) {
-      kidsInPool++;
-      System.out.println("ki after kid start swim: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
-      System.out.println("ki after instructor go to rest: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
-
-      // awake threads if needed
-
-      log.resting();
-    }
-    else
+    if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
       System.out.println("\n\n WARNING too many kids in the pool \n\n");
+
+    kidsInPool++;
+    System.out.println("ki after kid start swim: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
 
     // awake threads if needed
 
     log.swimming();
+
+    // awake threads if needed
+
   }
 
   @Override
@@ -70,9 +67,7 @@ public class Pool2 extends Pool{ //max kids/instructor
     System.out.println("ki before instr start swim: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
     instructorsInPool++;
 
-    // if (kidsInPool <= 0 && max_ki >= kidsInPool/instructorsInPool)0
-    // while (kidsInPool/instructorsInPool < max_ki)
-    notify();        // let all the kids waiting to start swimmingAll
+    notifyAll();        // let all the kids waiting to start swimmingAll
 
     System.out.println("ki after notifyAll the kids: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
 
@@ -85,24 +80,32 @@ public class Pool2 extends Pool{ //max kids/instructor
     System.out.println("instructors presents: " + instructorsInPool);
     System.out.println("kids presents: " + kidsInPool);
     System.out.println("bef ki: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
-    System.out.println("aft ki: " + ((instructorsInPool == 0) ? 0 : (instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)));
+    System.out.println("aft ki: " + ((instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)));
 
-    while ( (kidsInPool > 0 && instructorsInPool <= 1) || (instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))){
+    while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
       log.waitingToRest();
       wait();
     }
 
     // update state
-    if (instructorsInPool != 0) {
-      instructorsInPool--;
-      System.out.println("ki after instructor go to rest: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
-
-      // awake threads if needed
-
-      log.resting();
-    }
-    else
+    if (instructorsInPool == 0)
       System.out.println("\n\n WARNING instructor already resting \n\n");
+
+    if (((instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)) > max_ki)
+        System.out.println("\n\n WARNING too many kids \n\n");
+
+    if (kidsInPool > 0 && instructorsInPool <= 1)
+      System.out.println("\n\n WARNING kids still in the pool \n\n");
+
+    instructorsInPool--;
+    System.out.println("ki after instructor go to rest: " + ((instructorsInPool == 0) ? 0 : (float) kidsInPool/instructorsInPool));
+
+    // awake threads if needed
+
+    log.resting();
+    // }
+    // else
+
 
   }
 }
