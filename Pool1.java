@@ -12,13 +12,14 @@ public class Pool1 extends Pool {   //no kids alone
 
     @Override
     public synchronized void kidSwims() throws InterruptedException {
-      System.out.println("kid want to swim");
-      System.out.println("kids presents: " + kidsInPool);
-      System.out.println("instructors presents: " + instructorsInPool);
       while ( instructorsInPool <= 0 ){
         log.waitingToSwim();
         wait();
       }
+
+
+      if (instructorsInPool <= 0)
+        this.checks("instructors not in the pool");
 
       // update state
       kidsInPool++;
@@ -29,35 +30,31 @@ public class Pool1 extends Pool {   //no kids alone
 
     @Override
     public synchronized void kidRests() {
-      System.out.println("kid want to rest");
       kidsInPool--;
 
-      if (kidsInPool <= 0)
-        notify();   // let the last instructor rest if he was waiting
+      notify();   // let the last instructor rest if he was waiting
 
       log.resting();
     }
 
     @Override
     public synchronized void instructorSwims() {
-      System.out.println("instructor want to swim");
       instructorsInPool++;
 
-      if (kidsInPool <= 0)
-        notifyAll();        // let all the kids waiting to start swimming
+      notifyAll();        // let all the kids waiting to start swimming
 
       log.swimming();
     }
 
     @Override
     public synchronized void instructorRests() throws InterruptedException {
-      System.out.println("instructor want to rest");
-      System.out.println("instructors presents: " + instructorsInPool);
-      System.out.println("kids presents: " + kidsInPool);
       while ( kidsInPool > 0 && instructorsInPool <= 1 ){
         log.waitingToRest();
         wait();
       }
+
+      if (kidsInPool > 0 && instructorsInPool <= 1)
+        this.checks("kids still in the pool");
 
       // update state
       instructorsInPool--;
@@ -65,5 +62,12 @@ public class Pool1 extends Pool {   //no kids alone
       // awake threads if needed
 
       log.resting();
+    }
+
+    public synchronized void checks(String err) throws InterruptedException {
+        System.out.println("kids presents: " + kidsInPool);
+        System.out.println("instructors presents: " + instructorsInPool);
+
+        System.out.println("\n\n WARNING:" + err + "\n\n");
     }
 }
