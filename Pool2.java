@@ -17,12 +17,12 @@ public class Pool2 extends Pool{ //max kids/instructor
     // if there's no instructor in the pool OR
     //    there's too many kids in the pool
     // then wait
-    while ( instructorsInPool <= 0 || (instructorsInPool == 0) ? true : max_ki < ((float) (kidsInPool+1)/instructorsInPool)){
+    while ( instructorsInPool <= 0 || max_ki < this.getCurrentKI(kidsInPool+1, instructorsInPool)){
       log.waitingToSwim();
       wait();
     }
 
-    if (((float) (kidsInPool+1)/instructorsInPool) > max_ki)
+    if ( this.getCurrentKI(kidsInPool+1, instructorsInPool) > max_ki)
       this.checks("too many kids pool");
 
     // update state
@@ -54,7 +54,7 @@ public class Pool2 extends Pool{ //max kids/instructor
     // if there's still kids in the pool AND there's only one instructor OR
     //    there's too many kids in the pool
     // then wait
-    while ( (kidsInPool > 0 && instructorsInPool <= 1) || ((instructorsInPool == 0) ? false : (instructorsInPool-1 == 0) ? false : max_ki < ((float) kidsInPool/(instructorsInPool-1))) ){
+    while ( (kidsInPool > 0 && instructorsInPool <= 1) || max_ki < this.getCurrentKI(kidsInPool, instructorsInPool-1) ){
       log.waitingToRest();
       wait();
     }
@@ -63,7 +63,7 @@ public class Pool2 extends Pool{ //max kids/instructor
     if (instructorsInPool == 0)
       this.checks("instructor already resting");
 
-    if (((instructorsInPool-1 == 0) ? 0 : (float) kidsInPool/(instructorsInPool-1)) > max_ki)
+    if (this.getCurrentKI(kidsInPool, instructorsInPool-1) > max_ki)
       this.checks("too many kids");
 
     if (kidsInPool > 0 && instructorsInPool <= 1)
@@ -75,6 +75,8 @@ public class Pool2 extends Pool{ //max kids/instructor
     log.resting();
   }
 
+  private synchronized float getCurrentKI(int kids, int insts) throws InterruptedException { return (insts == 0) ? 0 : (float)kids/insts; }
+  
   // information about the error occured
   private synchronized void checks(String err) throws InterruptedException {
       System.out.println("kids presents: " + kidsInPool);
