@@ -62,6 +62,7 @@ public class Pool1 extends Pool {   //no kids alone
       log.resting();
     }
 
+    // information about the error occured
     private synchronized void checks(String err) throws InterruptedException {
         System.out.println("kids presents: " + kidsInPool);
         System.out.println("instructors presents: " + instructorsInPool);
