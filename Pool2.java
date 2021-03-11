@@ -43,7 +43,7 @@ public class Pool2 extends Pool{ //max kids/instructor
     kidsInPool--;
 
     // awake thread
-    notify();   // notify the last instructor waiting to rest
+    notifyAll();   // notify the last instructor waiting to rest
 
     log.resting();
   }

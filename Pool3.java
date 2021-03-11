@@ -55,7 +55,7 @@ public class Pool3 extends Pool {   //max capacity
     kidsInPool--;
 
     // awake thread
-    notify();   // notify the last instructor waiting to rest
+    notifyAll();   // notify the last instructor waiting to rest
 
     log.resting();
   }
